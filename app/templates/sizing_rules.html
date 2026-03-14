@@ -1,0 +1,62 @@
+{% extends 'base.html' %}
+{% block content %}
+<h4 class="text-success fw-bold">Sizing Rules Configuration</h4>
+<p class="text-muted">Update crop water requirements and irrigation efficiency values used in calculations.</p>
+
+<div class="card shadow-sm mt-3">
+    <div class="card-body">
+        <table class="table table-hover">
+            <thead class="table-success">
+                <tr>
+                    <th>Crop Type</th>
+                    <th>Irrigation Method</th>
+                    <th>Water Req. (mm/day)</th>
+                    <th>Efficiency</th>
+                    <th>Action</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for rule in rules %}
+                <tr>
+                    <td>{{ rule.crop_type.title() }}</td>
+                    <td>{{ rule.irrigation_method.title() }}</td>
+                    <td>{{ rule.water_req_mm_day }}</td>
+                    <td>{{ (rule.efficiency * 100)|int }}%</td>
+                    <td>
+                        <button class="btn btn-sm btn-outline-success"
+                                data-bs-toggle="collapse"
+                                data-bs-target="#edit-{{ rule.id }}">
+                            Edit
+                        </button>
+                    </td>
+                </tr>
+                <tr class="collapse" id="edit-{{ rule.id }}">
+                    <td colspan="5">
+                        <form method="POST" action="{{ url_for('admin.edit_sizing_rule', rule_id=rule.id) }}" class="d-flex gap-3 align-items-end p-2">
+                            <div>
+                                <label class="form-label small">Water Req. (mm/day)</label>
+                                <input type="number" step="0.1" name="water_req_mm_day"
+                                       value="{{ rule.water_req_mm_day }}"
+                                       class="form-control form-control-sm" style="width:140px" required>
+                            </div>
+                            <div>
+                                <label class="form-label small">Efficiency (0.0 - 1.0)</label>
+                                <input type="number" step="0.01" min="0.1" max="1.0"
+                                       name="efficiency"
+                                       value="{{ rule.efficiency }}"
+                                       class="form-control form-control-sm" style="width:140px" required>
+                            </div>
+                            <div>
+                                <button type="submit" class="btn btn-success btn-sm">Save</button>
+                            </div>
+                        </form>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<a href="{{ url_for('admin.dashboard') }}" class="btn btn-outline-secondary mt-3">Back to Dashboard</a>
+{% endblock %}
