@@ -1,0 +1,46 @@
+{% extends 'base.html' %}
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-md-6">
+        <div class="card shadow-sm">
+            <div class="card-body p-4">
+                <h4 class="text-success fw-bold mb-4">Farm Details</h4>
+                <form method="POST">
+                    <div class="mb-3">
+                        <label class="form-label">Farm Size (acres)</label>
+                        <input type="number" step="0.1" name="farm_size" class="form-control" required>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Crop Type</label>
+                        <select name="crop_type" class="form-select" required>
+                            <option value="maize">Maize</option>
+                            <option value="beans">Beans</option>
+                            <option value="tomatoes">Tomatoes</option>
+                            <option value="vegetables">Vegetables</option>
+                            <option value="other">Other</option>
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Irrigation Method</label>
+                        <select name="irrigation_method" class="form-select" required>
+                            <option value="drip">Drip</option>
+                            <option value="sprinkler">Sprinkler</option>
+                            <option value="surface">Surface</option>
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Water Source</label>
+                        <select name="water_source" class="form-select" required>
+                            <option value="river">River</option>
+                            <option value="borehole">Borehole</option>
+                            <option value="rainwater">Rainwater Harvesting</option>
+                            <option value="dam">Dam</option>
+                        </select>
+                    </div>
+                    <button type="submit" class="btn btn-success w-100">Get Recommendation</button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

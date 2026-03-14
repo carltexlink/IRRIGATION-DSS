@@ -1,0 +1,125 @@
+{% extends 'base.html' %}
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-md-8">
+        <div class="card shadow-sm mb-4">
+            <div class="card-body p-4">
+                <h4 class="text-success fw-bold mb-4">Your Irrigation Recommendation</h4>
+
+                <h6 class="text-muted mb-2">Pump</h6>
+                <table class="table table-bordered mb-4">
+                    <tr>
+                        <td class="fw-bold">Recommended Size</td>
+                        <td>{{ rec.pump_capacity }} kW &nbsp;/&nbsp; {{ rec.pump_hp }} HP</td>
+                    </tr>
+                    <tr>
+                        <td class="fw-bold">Pump Type</td>
+                        <td>{{ rec.pump_type }}</td>
+                    </tr>
+                    <tr>
+                        <td class="fw-bold">Calculated Power</td>
+                        <td>{{ rec.pump_power_kw }} kW (before safety margin)</td>
+                    </tr>
+                    <tr>
+                        <td class="fw-bold">Advice</td>
+                        <td class="text-success">{{ rec.pump_notes }}</td>
+                    </tr>
+                </table>
+
+                <h6 class="text-muted mb-2">Pipe & Flow</h6>
+                <table class="table table-bordered mb-4">
+                    <tr>
+                        <td class="fw-bold">Pipe Diameter</td>
+                        <td>{{ rec.pipe_diameter }} mm</td>
+                    </tr>
+                    <tr>
+                        <td class="fw-bold">Flow Rate</td>
+                        <td>{{ rec.flow_rate }} L/hr &nbsp;/&nbsp; {{ rec.flow_rate_m3hr }} m³/hr</td>
+                    </tr>
+                </table>
+
+                <div class="d-flex gap-2">
+                    <a href="{{ url_for('reports.generate_pdf', rec_id=rec.id) }}" class="btn btn-outline-success">Download PDF</a>
+                    <a href="{{ url_for('farmer.farm_input') }}" class="btn btn-success">New Recommendation</a>
+                    <a href="{{ url_for('farmer.dashboard') }}" class="btn btn-outline-secondary">Dashboard</a>
+                </div>
+            </div>
+        </div>
+
+        <h5 class="fw-bold mb-3">Verified Suppliers for {{ farm.irrigation_method|title }} Irrigation</h5>
+        {% if suppliers %}
+            {% for entry in suppliers %}
+            <div class="card shadow-sm mb-3">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-start">
+                        <div>
+                            <h6 class="fw-bold text-success mb-0">{{ entry.supplier.business_name }}</h6>
+                            <small class="text-muted">{{ entry.supplier.location }}</small>
+                        </div>
+                        <div class="text-end">
+                            <small class="text-muted d-block">{{ entry.supplier.phone }}</small>
+                            <small class="text-muted">{{ entry.supplier.contact_email }}</small>
+                        </div>
+                    </div>
+                    <hr>
+                    <table class="table table-sm table-hover mb-3">
+                        <thead class="table-light">
+                            <tr>
+                                <th>Equipment</th>
+                                <th>Type</th>
+                                <th>Price (KES)</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for item in entry.items %}
+                            <tr>
+                                <td>{{ item.name }}</td>
+                                <td>{{ item.equipment_type }}</td>
+                                <td>{{ '{:,.0f}'.format(item.price) }}</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+
+                    <div class="mb-2">
+                        <small class="text-muted">
+                            Average rating:
+                            {% set avg = entry.avg_rating %}
+                            {% if avg %}
+                                <strong class="text-warning">{{ avg }} / 5</strong>
+                                ({{ entry.rating_count }} review{{ 's' if entry.rating_count != 1 }})
+                            {% else %}
+                                <span class="text-muted">No ratings yet</span>
+                            {% endif %}
+                        </small>
+                    </div>
+
+                    <details>
+                        <summary class="text-success" style="cursor:pointer; font-size:13px;">Rate this supplier</summary>
+                        <form method="POST" action="{{ url_for('farmer.rate_supplier', supplier_id=entry.supplier.id) }}" class="mt-2">
+                            <div class="mb-2">
+                                <label class="form-label small">Score</label>
+                                <select name="score" class="form-select form-select-sm" style="width:120px" required>
+                                    <option value="5">5 - Excellent</option>
+                                    <option value="4">4 - Good</option>
+                                    <option value="3">3 - Average</option>
+                                    <option value="2">2 - Poor</option>
+                                    <option value="1">1 - Very Poor</option>
+                                </select>
+                            </div>
+                            <div class="mb-2">
+                                <label class="form-label small">Comment (optional)</label>
+                                <input type="text" name="comment" class="form-control form-control-sm" placeholder="e.g. Fast delivery, good quality">
+                            </div>
+                            <button type="submit" class="btn btn-sm btn-outline-success">Submit Rating</button>
+                        </form>
+                    </details>
+                </div>
+            </div>
+            {% endfor %}
+        {% else %}
+            <div class="alert alert-warning">No verified suppliers found for this irrigation method yet.</div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}
