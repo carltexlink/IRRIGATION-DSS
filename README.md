@@ -27,9 +27,9 @@ Small-scale farmers often buy wrongly sized pumps and pipes due to limited techn
 
 | Role | What They Can Do |
 |------|-----------------|
-| Farmer | Register, enter farm details, get recommendations, view suppliers, rate suppliers |
-| Seller | Register with business details, manage equipment listings (add/edit/delete) |
-| Admin | Approve sellers, manage users, configure sizing rules |
+| Farmer | Register, enter farm details, get recommendations, view history, view suppliers, rate suppliers |
+| Seller | Register with business details, manage equipment listings after admin approval |
+| Admin | Approve sellers, manage users, configure FAO-56 sizing rules |
 
 ---
 
@@ -52,28 +52,29 @@ IRRIGATION-DSS/
 ├── run.py                  # Entry point
 ├── config.py               # App configuration
 ├── calculator.py           # Core sizing engine (FAO-56 formulas)
+├── setup.py                # One-command database setup
+├── seed.py                 # Optional sample supplier data
 ├── requirements.txt
 ├── .env                    # Environment variables (not committed)
-├── seed.py                 # Sample data for development
 ├── app/
 │   ├── __init__.py         # App factory
 │   ├── models.py           # Database models
 │   ├── sizing.py           # Connects calculator to database rules
 │   ├── routes/
 │   │   ├── auth.py         # Login, register, logout
-│   │   ├── farmer.py       # Farm input, recommendations, ratings
-│   │   ├── seller.py       # Equipment listings
-│   │   ├── admin.py        # User management, sizing rules
+│   │   ├── farmer.py       # Farm input, recommendations, history, ratings
+│   │   ├── seller.py       # Equipment listings management
+│   │   ├── admin.py        # User management, seller approval, sizing rules
 │   │   └── reports.py      # PDF generation
 │   ├── templates/          # HTML templates
 │   └── static/             # CSS and JS
 └── tests/
-    └── test_sizing.py      # 25 pytest unit tests
+    └── test_sizing.py      # 24 pytest unit tests
 ```
 
 ---
 
-## Setup Instructions
+## Quick Start (After Cloning)
 
 ### 1. Clone the repository
 ```bash
@@ -81,67 +82,81 @@ git clone <your-repo-url>
 cd IRRIGATION-DSS
 ```
 
-### 2. Install dependencies
+### 2. Create and activate a virtual environment
+
+On Windows:
+```bash
+python -m venv venv
+venv\Scripts\activate
+```
+
+On Mac/Linux:
+```bash
+python -m venv venv
+source venv/bin/activate
+```
+
+You should see `(venv)` at the start of your terminal line.
+
+### 3. Install dependencies
 ```bash
 pip install -r requirements.txt
 ```
 
-### 3. Create the database
+### 4. Start MySQL
 
-Open MySQL and run:
+**Using XAMPP:**
+- Open XAMPP Control Panel
+- Click **Start** next to MySQL
+- Click **Admin** to open phpMyAdmin
+- Click **New** on the left sidebar
+- Type `irrigation_dss` and click **Create**
+
+**Using MySQL directly:**
 ```sql
 CREATE DATABASE irrigation_dss;
 ```
 
-### 4. Configure environment variables
+### 5. Create your `.env` file
 
-Create a `.env` file in the root directory:
+Create a file called `.env` in the project root — this is not committed to git for security:
+
+**If using XAMPP (no password):**
 ```
-SECRET_KEY=your-secret-key
+SECRET_KEY=supersecretkey123
+DATABASE_URL=mysql+pymysql://root:@localhost/irrigation_dss
+```
+
+**If using MySQL with a password:**
+```
+SECRET_KEY=supersecretkey123
 DATABASE_URL=mysql+pymysql://root:yourpassword@localhost/irrigation_dss
 ```
 
-### 5. Create tables
+### 6. Run the setup script
+
+This creates all tables, the admin account and seeds the FAO-56 sizing rules:
 ```bash
-python -c "from app import create_app, db; app = create_app(); app.app_context().push(); db.create_all()"
+python setup.py
 ```
 
-### 6. Create admin account
-```bash
-python -c "
-from app import create_app, db
-from app.models import User
-app = create_app()
-with app.app_context():
-    admin = User(name='Admin', email='admin@irrigation.com', role='admin')
-    admin.set_password('admin123')
-    db.session.add(admin)
-    db.session.commit()
-"
+You should see:
+```
+✓ All tables created
+  ✓ user
+  ✓ farm
+  ✓ recommendation
+  ✓ supplier
+  ✓ equipment
+  ✓ rating
+  ✓ sizing_rule
+✓ Admin user created
+✓ 15 sizing rules seeded
+
+All done! Run: python run.py
 ```
 
-### 7. Seed sizing rules
-```bash
-python -c "
-from app import create_app, db
-from app.models import SizingRule
-app = create_app()
-with app.app_context():
-    rules = [
-        ('maize', 5.5, 'drip', 0.90), ('maize', 5.5, 'sprinkler', 0.75), ('maize', 5.5, 'surface', 0.60),
-        ('beans', 4.5, 'drip', 0.90), ('beans', 4.5, 'sprinkler', 0.75), ('beans', 4.5, 'surface', 0.60),
-        ('tomatoes', 6.0, 'drip', 0.90), ('tomatoes', 6.0, 'sprinkler', 0.75), ('tomatoes', 6.0, 'surface', 0.60),
-        ('vegetables', 5.0, 'drip', 0.90), ('vegetables', 5.0, 'sprinkler', 0.75), ('vegetables', 5.0, 'surface', 0.60),
-        ('other', 5.0, 'drip', 0.90), ('other', 5.0, 'sprinkler', 0.75), ('other', 5.0, 'surface', 0.60),
-    ]
-    for crop, water, method, eff in rules:
-        db.session.add(SizingRule(crop_type=crop, water_req_mm_day=water, irrigation_method=method, efficiency=eff))
-    db.session.commit()
-    print('Done!')
-"
-```
-
-### 8. Run the app
+### 7. Run the app
 ```bash
 python run.py
 ```
@@ -150,12 +165,35 @@ Visit `http://127.0.0.1:5000`
 
 ---
 
+## Default Admin Account
+
+| Field | Value |
+|-------|-------|
+| Email | admin@irrigation.com |
+| Password | admin123 |
+
+> Change the password after first login in a production environment.
+
+---
+
+## Daily Startup
+
+Once set up, every time you want to run the project:
+
+1. Open XAMPP → click **Start** next to MySQL
+2. Open your project in VS Code
+3. Activate your virtual environment: `venv\Scripts\activate`
+4. Run: `python run.py`
+5. Visit `http://127.0.0.1:5000`
+
+---
+
 ## Running Tests
 ```bash
 pytest tests/test_sizing.py -v
 ```
 
-25 unit tests covering flow rate, pump power, pipe diameter, pump recommendations and full calculations.
+24 unit tests covering flow rate, pump power, pipe diameter, pump recommendations and full calculations.
 
 ---
 
@@ -164,12 +202,25 @@ pytest tests/test_sizing.py -v
 The core calculation engine (`calculator.py`) is based on:
 
 - **FAO-56** crop water requirement standards for East Africa
-- **Continuity equation** for pipe diameter sizing
-- **Hydraulic pump power formula** — P = (ρgQH) / η
+- **Continuity equation** for pipe diameter sizing: D = √(4Q / πv)
+- **Hydraulic pump power formula**: P = (ρgQH) / η
 - **20% safety margin** on all pump recommendations
 - Standard Kenyan market pump size brackets (0.5 HP to 7.5 HP)
 
 Sizing rules (crop water requirements and irrigation efficiencies) are stored in the database and can be updated by the admin without touching code.
+
+---
+
+## Security Features
+
+- Password hashing with Werkzeug
+- Role-based access control (farmer / seller / admin)
+- Session-based authentication with Flask-Login
+- Deactivated users cannot log in
+- Farmers can only view their own recommendations
+- Sellers can only manage their own equipment listings
+- Only admin-approved suppliers appear to farmers
+- Database-level unique constraints on ratings and sizing rules
 
 ---
 

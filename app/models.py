@@ -17,6 +17,7 @@ class User(UserMixin, db.Model):
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
 
     farms = db.relationship('Farm', backref='farmer', lazy=True)
+    supplier_profile = db.relationship('Supplier', backref='user', uselist=False, lazy=True)
 
     def set_password(self, password):
         self.password_hash = generate_password_hash(password)
@@ -26,7 +27,7 @@ class User(UserMixin, db.Model):
 
 class Farm(db.Model):
     id = db.Column(db.Integer, primary_key=True)
-    farm_size = db.Column(db.Float, nullable=False)        # in acres
+    farm_size = db.Column(db.Float, nullable=False)             # in acres
     crop_type = db.Column(db.String(100), nullable=False)
     irrigation_method = db.Column(db.String(50), nullable=False)  # drip, sprinkler, surface
     water_source = db.Column(db.String(50), nullable=False)
@@ -37,14 +38,14 @@ class Farm(db.Model):
 
 class Recommendation(db.Model):
     id = db.Column(db.Integer, primary_key=True)
-    pump_capacity = db.Column(db.Float)      # recommended kW
-    pump_hp = db.Column(db.Float)            # horsepower
-    pump_type = db.Column(db.String(100))    # e.g. Centrifugal Surface Pump
-    pump_notes = db.Column(db.String(255))   # advice for farmer
-    pipe_diameter = db.Column(db.Float)      # mm
-    flow_rate = db.Column(db.Float)          # litres/hour
-    flow_rate_m3hr = db.Column(db.Float)     # m³/hour
-    pump_power_kw = db.Column(db.Float)      # calculated power before safety margin
+    pump_capacity = db.Column(db.Float)       # recommended kW
+    pump_hp = db.Column(db.Float)             # horsepower
+    pump_type = db.Column(db.String(100))     # e.g. Centrifugal Surface Pump
+    pump_notes = db.Column(db.String(255))    # advice for farmer
+    pipe_diameter = db.Column(db.Float)       # mm
+    flow_rate = db.Column(db.Float)           # litres/hour
+    flow_rate_m3hr = db.Column(db.Float)      # m³/hour
+    pump_power_kw = db.Column(db.Float)       # calculated power before safety margin
     farm_id = db.Column(db.Integer, db.ForeignKey('farm.id'), nullable=False)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
 
@@ -58,6 +59,7 @@ class Supplier(db.Model):
     user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
 
     equipment = db.relationship('Equipment', backref='supplier', lazy=True)
+    ratings = db.relationship('Rating', backref='supplier', lazy=True)
 
 class Equipment(db.Model):
     id = db.Column(db.Integer, primary_key=True)
@@ -70,11 +72,16 @@ class Equipment(db.Model):
 
 class Rating(db.Model):
     id = db.Column(db.Integer, primary_key=True)
-    score = db.Column(db.Integer, nullable=False)        # 1 to 5 stars
+    score = db.Column(db.Integer, nullable=False)       # 1 to 5
     comment = db.Column(db.String(255))
     farmer_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
     supplier_id = db.Column(db.Integer, db.ForeignKey('supplier.id'), nullable=False)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
+
+    # Enforce one rating per farmer per supplier at database level
+    __table_args__ = (
+        db.UniqueConstraint('farmer_id', 'supplier_id', name='unique_farmer_supplier_rating'),
+    )
 
 class SizingRule(db.Model):
     id = db.Column(db.Integer, primary_key=True)
@@ -83,3 +90,8 @@ class SizingRule(db.Model):
     irrigation_method = db.Column(db.String(50), nullable=False)
     efficiency = db.Column(db.Float, nullable=False)
     updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+
+    # Enforce one rule per crop + method combination
+    __table_args__ = (
+        db.UniqueConstraint('crop_type', 'irrigation_method', name='unique_crop_method_rule'),
+    )

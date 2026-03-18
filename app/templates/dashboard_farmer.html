@@ -1,14 +1,51 @@
 {% extends 'base.html' %}
 {% block content %}
-<h4 class="text-success fw-bold">Welcome, {{ user.name }}</h4>
-<p class="text-muted">Get irrigation equipment recommendations for your farm.</p>
-<div class="row mt-4">
-    <div class="col-md-4">
-        <div class="card text-center p-4 shadow-sm">
-            <h6 class="text-muted">Get a Recommendation</h6>
-            <p class="small">Enter your farm details to get pump, pipe and flow rate suggestions.</p>
-            <a href="{{ url_for('farmer.farm_input') }}" class="btn btn-success">Start Now</a>
-        </div>
+<div class="d-flex justify-content-between align-items-center mb-3">
+    <div>
+        <h4 class="text-success fw-bold mb-0">Welcome, {{ user.name }}</h4>
+        <p class="text-muted mb-0">Get irrigation equipment recommendations for your farm.</p>
+    </div>
+    <a href="{{ url_for('farmer.farm_input') }}" class="btn btn-success">
+        New Recommendation
+    </a>
+</div>
+
+<div class="card shadow-sm mt-3">
+    <div class="card-body">
+        <h5 class="mb-3">Your Past Recommendations</h5>
+        {% if past_recs %}
+        <table class="table table-hover">
+            <thead class="table-success">
+                <tr>
+                    <th>Date</th>
+                    <th>Crop</th>
+                    <th>Method</th>
+                    <th>Farm Size</th>
+                    <th>Pump</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for rec, farm in past_recs %}
+                <tr>
+                    <td>{{ rec.created_at.strftime('%d %b %Y') }}</td>
+                    <td>{{ farm.crop_type.title() }}</td>
+                    <td>{{ farm.irrigation_method.title() }}</td>
+                    <td>{{ farm.farm_size }} acres</td>
+                    <td>{{ rec.pump_capacity }} kW / {{ rec.pump_hp }} HP</td>
+                    <td>
+                        <a href="{{ url_for('farmer.recommendation', rec_id=rec.id) }}"
+                           class="btn btn-sm btn-outline-success">View</a>
+                        <a href="{{ url_for('reports.generate_pdf', rec_id=rec.id) }}"
+                           class="btn btn-sm btn-outline-secondary">PDF</a>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+        {% else %}
+        <p class="text-muted">No recommendations yet. Click <strong>New Recommendation</strong> to get started.</p>
+        {% endif %}
     </div>
 </div>
 {% endblock %}

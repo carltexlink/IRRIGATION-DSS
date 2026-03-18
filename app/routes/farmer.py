@@ -1,9 +1,9 @@
 from flask import Blueprint, render_template, redirect, url_for, flash, request
 from flask_login import login_required, current_user
-from app.models import Farm, Recommendation
+from app.models import Farm, Recommendation, Equipment, Supplier, Rating
 from app.sizing import calculate
 from app import db
-from app.models import Farm, Recommendation, Equipment, Supplier, Rating
+from sqlalchemy import func
 
 farmer = Blueprint('farmer', __name__)
 
@@ -14,7 +14,12 @@ def home():
 @farmer.route('/dashboard')
 @login_required
 def dashboard():
-    return render_template('dashboard_farmer.html', user=current_user)
+    past_recs = db.session.query(Recommendation, Farm).join(
+        Farm, Recommendation.farm_id == Farm.id
+    ).filter(Farm.user_id == current_user.id).order_by(
+        Recommendation.created_at.desc()
+    ).all()
+    return render_template('dashboard_farmer.html', user=current_user, past_recs=past_recs)
 
 @farmer.route('/farm-input', methods=['GET', 'POST'])
 @login_required
@@ -49,11 +54,13 @@ def farm_input():
 @farmer.route('/recommendation/<int:rec_id>')
 @login_required
 def recommendation(rec_id):
-    from app.models import Rating
-    from sqlalchemy import func
-
     rec = Recommendation.query.get_or_404(rec_id)
     farm = Farm.query.get(rec.farm_id)
+
+    # Security check — farmer can only view their own recommendations
+    if farm.user_id != current_user.id:
+        flash('Access denied.')
+        return redirect(url_for('farmer.dashboard'))
 
     matched_equipment = Equipment.query.join(Supplier).filter(
         Equipment.irrigation_method == farm.irrigation_method,
@@ -65,7 +72,6 @@ def recommendation(rec_id):
     for item in matched_equipment:
         sup = Supplier.query.get(item.supplier_id)
         if sup.id not in suppliers_dict:
-            # Calculate average rating
             avg = db.session.query(func.avg(Rating.score)).filter_by(supplier_id=sup.id).scalar()
             count = Rating.query.filter_by(supplier_id=sup.id).count()
             suppliers_dict[sup.id] = {
@@ -84,11 +90,9 @@ def recommendation(rec_id):
 @farmer.route('/rate-supplier/<int:supplier_id>', methods=['POST'])
 @login_required
 def rate_supplier(supplier_id):
-    from app.models import Rating
     score = int(request.form.get('score'))
     comment = request.form.get('comment')
 
-    # Check if farmer already rated this supplier
     existing = Rating.query.filter_by(
         farmer_id=current_user.id,
         supplier_id=supplier_id
