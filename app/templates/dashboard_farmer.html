@@ -1,0 +1,14 @@
+{% extends 'base.html' %}
+{% block content %}
+<h4 class="text-success fw-bold">Welcome, {{ user.name }}</h4>
+<p class="text-muted">Get irrigation equipment recommendations for your farm.</p>
+<div class="row mt-4">
+    <div class="col-md-4">
+        <div class="card text-center p-4 shadow-sm">
+            <h6 class="text-muted">Get a Recommendation</h6>
+            <p class="small">Enter your farm details to get pump, pipe and flow rate suggestions.</p>
+            <a href="{{ url_for('farmer.farm_input') }}" class="btn btn-success">Start Now</a>
+        </div>
+    </div>
+</div>
+{% endblock %}
