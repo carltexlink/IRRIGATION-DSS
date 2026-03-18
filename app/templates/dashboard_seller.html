@@ -1,7 +1,18 @@
 {% extends 'base.html' %}
 {% block content %}
-<h4 class="text-success fw-bold">Seller Dashboard</h4>
-<p class="text-muted">Manage your equipment listings below.</p>
+
+{% if not supplier.is_approved %}
+<div class="alert alert-warning mt-3">
+    <strong>Account pending approval.</strong> Your seller account is awaiting admin verification. You will be able to manage listings once approved.
+</div>
+{% else %}
+
+<div class="d-flex justify-content-between align-items-center mb-3">
+    <div>
+        <h4 class="text-success fw-bold mb-0">{{ supplier.business_name }}</h4>
+        <p class="text-muted mb-0">{{ supplier.location }} &nbsp;|&nbsp; {{ supplier.phone }}</p>
+    </div>
+</div>
 
 <div class="card shadow-sm mt-3">
     <div class="card-body">
@@ -10,7 +21,8 @@
             <div class="row g-3">
                 <div class="col-md-4">
                     <label class="form-label">Equipment Name</label>
-                    <input type="text" name="name" class="form-control" placeholder="e.g. Honda WB20 Pump" required>
+                    <input type="text" name="name" class="form-control"
+                           placeholder="e.g. Honda WB20 Pump" required>
                 </div>
                 <div class="col-md-3">
                     <label class="form-label">Type</label>
@@ -23,7 +35,7 @@
                 </div>
                 <div class="col-md-3">
                     <label class="form-label">Irrigation Method</label>
-                    <select name="irrigation_method" class="form-select">
+                    <select name="irrigation_method" class="form-select" required>
                         <option value="drip">Drip</option>
                         <option value="sprinkler">Sprinkler</option>
                         <option value="surface">Surface</option>
@@ -31,7 +43,8 @@
                 </div>
                 <div class="col-md-2">
                     <label class="form-label">Price (KES)</label>
-                    <input type="number" step="0.01" name="price" class="form-control" required>
+                    <input type="number" step="0.01" name="price"
+                           class="form-control" required>
                 </div>
             </div>
             <button type="submit" class="btn btn-success mt-3">Add Equipment</button>
@@ -41,7 +54,7 @@
 
 <div class="card shadow-sm mt-4">
     <div class="card-body">
-        <h5 class="mb-3">Your Listings</h5>
+        <h5 class="mb-3">Your Active Listings</h5>
         {% if equipment %}
         <table class="table table-hover">
             <thead class="table-success">
@@ -55,19 +68,17 @@
             </thead>
             <tbody>
                 {% for item in equipment %}
-                {% if item.is_active %}
                 <tr>
                     <td>{{ item.name }}</td>
-                    <td>{{ item.equipment_type }}</td>
-                    <td>{{ item.irrigation_method }}</td>
-                    <td>{{ item.price }}</td>
+                    <td>{{ item.equipment_type.title() }}</td>
+                    <td>{{ item.irrigation_method.title() }}</td>
+                    <td>{{ '{:,.0f}'.format(item.price) }}</td>
                     <td>
                         <a href="{{ url_for('seller.delete_equipment', item_id=item.id) }}"
                            class="btn btn-sm btn-outline-danger"
                            onclick="return confirm('Remove this listing?')">Remove</a>
                     </td>
                 </tr>
-                {% endif %}
                 {% endfor %}
             </tbody>
         </table>
@@ -76,4 +87,6 @@
         {% endif %}
     </div>
 </div>
+
+{% endif %}
 {% endblock %}

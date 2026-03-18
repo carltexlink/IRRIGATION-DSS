@@ -12,6 +12,9 @@ def login():
         password = request.form.get('password')
         user = User.query.filter_by(email=email).first()
         if user and user.check_password(password):
+            if not user.is_approved:
+                flash('Your account has been deactivated. Please contact admin.')
+                return redirect(url_for('auth.login'))
             login_user(user)
             if user.role == 'admin':
                 return redirect(url_for('admin.dashboard'))
@@ -39,7 +42,6 @@ def register():
         db.session.add(user)
         db.session.flush()
 
-        # If registering as seller, create supplier profile
         if role == 'seller':
             business_name = request.form.get('business_name')
             phone = request.form.get('phone')
