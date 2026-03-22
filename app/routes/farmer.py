@@ -57,7 +57,6 @@ def recommendation(rec_id):
     rec = Recommendation.query.get_or_404(rec_id)
     farm = Farm.query.get(rec.farm_id)
 
-    # Security check — farmer can only view their own recommendations
     if farm.user_id != current_user.id:
         flash('Access denied.')
         return redirect(url_for('farmer.dashboard'))
@@ -76,11 +75,11 @@ def recommendation(rec_id):
             count = Rating.query.filter_by(supplier_id=sup.id).count()
             suppliers_dict[sup.id] = {
                 'supplier': sup,
-                'items': [],
+                'equipment': [],
                 'avg_rating': round(avg, 1) if avg else None,
                 'rating_count': count
             }
-        suppliers_dict[sup.id]['items'].append(item)
+        suppliers_dict[sup.id]['equipment'].append(item)
 
     return render_template('recommendation.html',
                            rec=rec,
